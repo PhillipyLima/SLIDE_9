@@ -1,0 +1,143 @@
+Atividade 4
+Para otimizar o desempenho do disco, você precisa salvar uma lista inteira
+de professores de uma só vez. A struct Professor possui registro (int) e horas_aula (int).
+O que o algoritmo deve fazer:
+Perguntar ao usuário quantos professores ele deseja cadastrar (N).
+Alocar dinamicamente um array para N professores.
+Criar um segundo bloco de memória (um buffer bruto de bytes com tamanho N *
+sizeof(Professor)).
+Utilizar memcpy() para copiar o array inteiro de structs para dentro desse buffer.
+Gravar o buffer completo no arquivo folha.dat com uma única chamada da função
+fwrite().
+Criar uma função de leitura que use fread() para carregar tudo de volta em um novo
+array dinâmico
+----------------------------------------------------------------------------
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    int registro;
+    int horas_aula;
+} Professor;
+
+Professor* lerProfessores(const char *nomeArquivo, int n) {
+
+    FILE *arquivo;
+    Professor *professores;
+
+    professores = (Professor *) malloc(n * sizeof(Professor));
+
+    if (professores == NULL) {
+        printf("Erro de alocacao.\n");
+        return NULL;
+    }
+
+    arquivo = fopen(nomeArquivo, "rb");
+
+    if (arquivo == NULL) {
+        printf("Erro ao abrir arquivo.\n");
+        free(professores);
+        return NULL;
+    }
+
+    fread(professores,
+          sizeof(Professor),
+          n,
+          arquivo);
+
+    fclose(arquivo);
+
+    return professores;
+}
+
+int main() {
+
+    int n, i;
+
+    printf("Quantos professores deseja cadastrar? ");
+    scanf("%d", &n);
+
+    // Array dinâmico de professores
+    Professor *professores =
+        (Professor *) malloc(n * sizeof(Professor));
+
+    if (professores == NULL) {
+        printf("Erro de alocacao de memoria.\n");
+        return 1;
+    }
+
+    // Cadastro
+    for (i = 0; i < n; i++) {
+
+        printf("\nProfessor %d\n", i + 1);
+
+        printf("Registro: ");
+        scanf("%d", &professores[i].registro);
+
+        printf("Horas-aula: ");
+        scanf("%d", &professores[i].horas_aula);
+    }
+
+    // Buffer bruto de bytes
+    void *buffer =
+        malloc(n * sizeof(Professor));
+
+    if (buffer == NULL) {
+        printf("Erro de alocacao do buffer.\n");
+        free(professores);
+        return 1;
+    }
+
+    // Copia todo o array para o buffer
+    memcpy(buffer,
+           professores,
+           n * sizeof(Professor));
+
+    FILE *arquivo;
+
+    arquivo = fopen("folha.dat", "wb");
+
+    if (arquivo == NULL) {
+        printf("Erro ao criar arquivo.\n");
+        free(professores);
+        free(buffer);
+        return 1;
+    }
+
+    // Uma única chamada de fwrite
+    fwrite(buffer,
+           n * sizeof(Professor),
+           1,
+           arquivo);
+
+    fclose(arquivo);
+
+    printf("\nDados gravados com sucesso!\n");
+
+    // Leitura do arquivo
+    Professor *leitura =
+        lerProfessores("folha.dat", n);
+
+    if (leitura != NULL) {
+
+        printf("\n===== PROFESSORES LIDOS =====\n");
+
+        for (i = 0; i < n; i++) {
+
+            printf("Professor %d\n", i + 1);
+            printf("Registro: %d\n",
+                    leitura[i].registro);
+            printf("Horas-aula: %d\n\n",
+                    leitura[i].horas_aula);
+        }
+
+        free(leitura);
+    }
+
+    free(professores);
+    free(buffer);
+
+    return 0;
+}
