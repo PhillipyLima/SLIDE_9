@@ -1,0 +1,89 @@
+Atividade 2: Você está desenvolvendo um sistema de RH. A struct
+Funcionario possui id (int), cargo (char[30]) e salario (float).
+O que o algoritmo deve fazer:
+a) Alocar dinamicamente na memória (usando malloc) o
+registro de um funcionário e preencher seus dados.
+b) Alocar dinamicamente um segundo registro ("Buffer de
+Backup").
+c) Usar a função memcpy() para espelhar instantaneamente os
+dados do funcionário original no buffer de backup.
+d) Salvar o conteúdo do buffer de backup em um arquivo
+binário chamado backup_rh.bin
+---------------------------------------------------------
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    int id;
+    char cargo[30];
+    float salario;
+} Funcionario;
+
+int main() {
+
+    Funcionario *funcionario;
+    Funcionario *backup;
+
+    FILE *arquivo;
+
+    // Alocação dinâmica do funcionário
+    funcionario = (Funcionario *) malloc(sizeof(Funcionario));
+
+    if(funcionario == NULL) {
+        printf("Erro de alocacao de memoria.\n");
+        return 1;
+    }
+
+    // Cadastro dos dados
+    printf("=== CADASTRO DO FUNCIONARIO ===\n");
+
+    printf("ID: ");
+    scanf("%d", &funcionario->id);
+
+    printf("Cargo: ");
+    scanf(" %[^\n]", funcionario->cargo);
+
+    printf("Salario: ");
+    scanf("%f", &funcionario->salario);
+
+    // Alocação dinâmica do backup
+    backup = (Funcionario *) malloc(sizeof(Funcionario));
+
+    if(backup == NULL) {
+        printf("Erro de alocacao de memoria.\n");
+        free(funcionario);
+        return 1;
+    }
+
+    // Cópia dos dados para o buffer de backup
+    memcpy(backup, funcionario, sizeof(Funcionario));
+
+    // Salvando em arquivo binário
+    arquivo = fopen("backup_rh.bin", "wb");
+
+    if(arquivo == NULL) {
+        printf("Erro ao criar arquivo.\n");
+        free(funcionario);
+        free(backup);
+        return 1;
+    }
+
+    fwrite(backup, sizeof(Funcionario), 1, arquivo);
+
+    fclose(arquivo);
+
+    printf("\nBackup realizado com sucesso!\n");
+
+    printf("\n=== DADOS DO BACKUP ===\n");
+    printf("ID: %d\n", backup->id);
+    printf("Cargo: %s\n", backup->cargo);
+    printf("Salario: R$ %.2f\n", backup->salario);
+
+    // Liberação de memória
+    free(funcionario);
+    free(backup);
+
+    return 0;
+}
