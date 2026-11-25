@@ -1,0 +1,174 @@
+Atividade 5:
+
+Um sistema eleitoral precisa registrar votos. Crie uma struct Eleitor
+com titulo (char[12]) e zona (int). Crie uma struct Cedula que contenha um Eleitor
+(struct aninhada) e o numero_voto (int).
+O que o algoritmo deve fazer:
+a) Implementar uma função que adicione votos dinamicamente (realoque
+memória usando realloc à medida que novos votos entram).
+b) Salvar a lista completa em um arquivo binário urnas.bin.
+c) Desenvolver uma função de recuperação rápida que abra o arquivo, descubra
+o tamanho total dele (usando fseek e ftell), aloque exatamente o espaço
+necessário na memória de uma só vez, e leia todos os registros do arquivo
+diretamente para o bloco alocado.
+--------------------------------------------------------------------------------
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    char titulo[12];
+    int zona;
+} Eleitor;
+
+typedef struct {
+    Eleitor eleitor;
+    int numero_voto;
+} Cedula;
+
+void adicionarVoto(Cedula **lista, int *quantidade)
+{
+    *lista = (Cedula *) realloc(
+                *lista,
+                (*quantidade + 1) * sizeof(Cedula)
+             );
+
+    if(*lista == NULL)
+    {
+        printf("Erro de alocacao!\n");
+        exit(1);
+    }
+
+    printf("\nTitulo de eleitor: ");
+    scanf("%11s", (*lista)[*quantidade].eleitor.titulo);
+
+    printf("Zona: ");
+    scanf("%d",
+          &(*lista)[*quantidade].eleitor.zona);
+
+    printf("Numero do voto: ");
+    scanf("%d",
+          &(*lista)[*quantidade].numero_voto);
+
+    (*quantidade)++;
+}
+
+Cedula *recuperarVotos(
+            const char *arquivoNome,
+            int *quantidade)
+{
+    FILE *arquivo;
+
+    arquivo = fopen(arquivoNome, "rb");
+
+    if(arquivo == NULL)
+    {
+        printf("Erro ao abrir arquivo.\n");
+        return NULL;
+    }
+
+    fseek(arquivo, 0, SEEK_END);
+
+    long tamanhoArquivo = ftell(arquivo);
+
+    rewind(arquivo);
+
+    *quantidade =
+        tamanhoArquivo / sizeof(Cedula);
+
+    Cedula *dados =
+        (Cedula *) malloc(tamanhoArquivo);
+
+    if(dados == NULL)
+    {
+        fclose(arquivo);
+        return NULL;
+    }
+
+    fread(dados,
+          sizeof(Cedula),
+          *quantidade,
+          arquivo);
+
+    fclose(arquivo);
+
+    return dados;
+}
+
+int main()
+{
+    Cedula *votos = NULL;
+    int quantidade = 0;
+
+    int opcao;
+
+    do
+    {
+        printf("\n1 - Adicionar voto\n");
+        printf("0 - Encerrar cadastro\n");
+        printf("Opcao: ");
+        scanf("%d", &opcao);
+
+        if(opcao == 1)
+        {
+            adicionarVoto(
+                &votos,
+                &quantidade
+            );
+        }
+
+    } while(opcao != 0);
+
+    FILE *arquivo;
+
+    arquivo = fopen("urnas.bin", "wb");
+
+    if(arquivo == NULL)
+    {
+        printf("Erro ao criar arquivo.\n");
+        free(votos);
+        return 1;
+    }
+
+    fwrite(votos,
+           sizeof(Cedula),
+           quantidade,
+           arquivo);
+
+    fclose(arquivo);
+
+    printf("\nArquivo gravado com sucesso!\n");
+
+    int totalRecuperado;
+
+    Cedula *recuperados =
+        recuperarVotos(
+            "urnas.bin",
+            &totalRecuperado
+        );
+
+    if(recuperados != NULL)
+    {
+        printf("\n===== VOTOS RECUPERADOS =====\n");
+
+        for(int i = 0;
+            i < totalRecuperado;
+            i++)
+        {
+            printf("\nCedula %d\n", i + 1);
+            printf("Titulo: %s\n",
+                   recuperados[i].eleitor.titulo);
+            printf("Zona: %d\n",
+                   recuperados[i].eleitor.zona);
+            printf("Voto: %d\n",
+                   recuperados[i].numero_voto);
+        }
+
+        free(recuperados);
+    }
+
+    free(votos);
+
+    return 0;
+}
